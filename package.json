@@ -1,5 +1,5 @@
 {
-  "name": "aframe-gif-shader",
+  "name": "aframe-gif-shader-fixed",
   "version": "0.2.0",
   "description": "A shader to display GIF for A-Frame VR.",
   "main": "dist/aframe-gif-shader.js",
