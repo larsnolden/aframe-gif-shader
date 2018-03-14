@@ -90,8 +90,15 @@
 
 	    /* For texuture */
 	    src: { default: null },
-	    autoplay: { default: true }
+			autoplay: { default: true },
 
+			onTextureResize: { default: 'string' },
+			onTextureWidth: { default: 'string' },
+			onTextureHeight: { default: 'string' },
+			normalHeight: { default: 'string' },
+			normalWidth: { default: 'string' },
+			onTexturePosition: { default: 'string' },
+			normalPosition: { default: 'string' },
 	  },
 
 	  /**
@@ -110,7 +117,14 @@
 	    this.__reset();
 	    this.material = new THREE.MeshBasicMaterial({ map: this.__texture });
 	    this.el.sceneEl.addBehavior(this);
-	    this.__addPublicFunctions();
+			this.__addPublicFunctions();
+			this.__onTextureResize = data.onTextureResize;
+			this.__onTextureWidth = data.onTextureWidth;
+			this.__onTextureHeight = data.onTextureHeight;
+			this.__normalWidth = data.normalWidth;
+			this.__normalHeight = data.normalHeight;
+			this.__onTexturePosition = data.onTexturePosition,
+			this.__normalPosition = data.normalPosition
 	    return this.material;
 	  },
 
@@ -134,7 +148,7 @@
 	  tick: function tick(t) {
 	    if (!this.__frames || this.paused()) return;
 	    if (Date.now() - this.__startTime >= this.__nextFrameTime) {
-	      this.nextFrame();
+				this.nextFrame();
 	    }
 	  },
 
@@ -424,7 +438,8 @@
 	      pause: this.pause.bind(this),
 	      togglePlayback: this.togglePlayback.bind(this),
 	      paused: this.paused.bind(this),
-	      nextFrame: this.nextFrame.bind(this)
+				nextFrame: this.nextFrame.bind(this),
+				resetFrameIndex: this.resetFrameIndex.bind(this)
 	    };
 	  },
 
@@ -434,6 +449,7 @@
 	   * @public
 	   */
 	  pause: function pause() {
+			console.log('pause', this.__textureSrc);
 	    log('pause');
 	    this.__paused = true;
 	  },
@@ -444,6 +460,7 @@
 	   * @public
 	   */
 	  play: function play() {
+			console.log('play', this.__textureSrc);
 	    log('play');
 	    this.__paused = false;
 	  },
@@ -480,17 +497,20 @@
 	   */
 	  nextFrame: function nextFrame() {
 	    this.__draw();
-
 	    /* update next frame time */
 	    while (Date.now() - this.__startTime >= this.__nextFrameTime) {
-
 	      this.__nextFrameTime += this.__delayTimes[this.__frameIdx++];
 	      if ((this.__infinity || this.__loopCnt) && this.__frameCnt <= this.__frameIdx) {
 	        /* go back to the first */
-	        this.__frameIdx = 0;
+					this.__frameIdx = 0;
 	      }
 	    }
-	  },
+		},
+		
+		resetFrameIndex: function() {
+			this.__frameIdx = 1;
+			console.log('current frame index', this.__frameIdx)
+		},
 
 
 	  /*==============================
@@ -506,13 +526,43 @@
 	    this.__texture.needsUpdate = true;
 	  },
 
-
 	  /**
 	   * draw
 	   * @private
 	   */
 	  __draw: function __draw() {
-	    this.__ctx.drawImage(this.__frames[this.__frameIdx], 0, 0, this.__width, this.__height);
+			if(this.__textureSrc === 'assets/interior/mar13/GMC_HeatedWheel_v03_TestA_Half.gif')console.log(this.__frameIdx)
+			if(this.__frameIdx + 4 === this.__frameCnt) {
+				if (this.__textureSrc === 'assets/interior/misc/poi_press_min.gif') console.log('finsished fuse animation');
+				this.el.emit(String(this.__textureSrc) + '-finished');
+			};
+			//	if perfomance Issue only clear each nth frame: 
+			// if (this.__frameIdx % 2 === 0)
+			//	clear Canvas to reduce smears
+			this.__clearCanvas();
+			if(this.__textureSrc === this.__onTextureResize && (this.el.getAttribute('geometry').height !== this.__onTextureHeight || this.el.getAttribute('geometry').width !== this.__onTextureWidth)) {
+				this.__clearCanvas();
+				this.el.setAttribute('geometry', 'width', this.__onTextureWidth);
+				this.__clearCanvas();
+				this.el.setAttribute('geometry', 'height', this.__onTextureHeight);
+				this.__clearCanvas();
+				this.el.setAttribute('position', this.__onTexturePosition);
+				this.__clearCanvas();
+				this.__clearCanvas();
+			}
+			if(this.__textureSrc !== this.__onTextureResize && (this.el.getAttribute('geometry').height === this.__onTextureHeight || this.el.getAttribute('geometry').width === this.__onTextureWidth)) {
+				this.__clearCanvas();
+				this.el.setAttribute('geometry', 'width', this.__normalWidth);
+				this.__clearCanvas();
+				this.el.setAttribute('geometry', 'height', this.__normalHeight);
+				this.__clearCanvas();
+				this.el.setAttribute('position', this.__normalPosition);
+				this.__clearCanvas();
+				this.__clearCanvas();
+			}
+			//	I want to change the position of the item in between clear canvas and draw Image of new src
+			// if (newSrc === assetSrcThatChangesPosition) changePosition
+			this.__ctx.drawImage(this.__frames[this.__frameIdx], 0, 0, this.__width, this.__height);
 	    this.__texture.needsUpdate = true;
 	  },
 
@@ -574,7 +624,7 @@
 	    this.__infinity = false;
 	    this.__loopCnt = 0;
 	    this.__frames = null;
-	    this.__textureSrc = null;
+			this.__textureSrc = null;
 	  }
 	});
 
